@@ -1,2 +1,2 @@
 # vit
-vision transformer for oct 
+vision transformer for oct image
