@@ -1,2 +1,10 @@
-# vit
-vision transformer for oct 
+# OCT image classification
+
+## requires
+
+## CNN
+
+## transformer
+
+## MLP
+

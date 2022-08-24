@@ -9,8 +9,9 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 
 from my_dataset import MyDataSet
-from vit_model import vit_base_patch16_224_in21k as create_model
 from utils import read_split_data, train_one_epoch, evaluate
+from models.mlp import MLPMixer
+from models.resnet import resnet18
 
 
 def main(args):
@@ -25,14 +26,12 @@ def main(args):
 
     data_transform = {
         "train": transforms.Compose([transforms.Resize([224, 375]),
-                                     # transforms.RandomResizedCrop(224),
                                      transforms.CenterCrop(224),
                                      transforms.RandomHorizontalFlip(),
                                      transforms.ToTensor(),
                                      transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
                                      ]),
         "val": transforms.Compose([transforms.Resize([224, 375]),
-                                   # transforms.RandomResizedCrop(224),
                                    transforms.CenterCrop(224),
                                    transforms.ToTensor(),
                                    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
@@ -64,11 +63,22 @@ def main(args):
                                              num_workers=nw,
                                              collate_fn=val_dataset.collate_fn)
 
-    model = create_model(num_classes=args.num_classes, has_logits=False).to(device)
+    # model = swin_base_patch4_window7_224_in22k(num_classes=args.num_classes, has_logits=False).to(device)
+    model = resnet18(num_classes=4).to(device)
+    # model = MLPMixer(
+    #     image_size=224,
+    #     channels=3,
+    #     patch_size=16,
+    #     dim=448,
+    #     depth=1,
+    #     dropout=0.3,
+    #     num_classes=4
+    # ).to(device)
 
     if args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-        weights_dict = torch.load(args.weights, map_location=device)
+        # weights_dict = torch.load(args.weights, map_location=device)
+        weights_dict = torch.load(args.weights, map_location=device)["model"]
 
         del_keys = ['head.weight', 'head.bias'] if model.has_logits \
             else ['pre_logits.fc.weight', 'pre_logits.fc.bias', 'head.weight', 'head.bias']
@@ -76,15 +86,23 @@ def main(args):
             del weights_dict[k]
         print(model.load_state_dict(weights_dict, strict=False))
 
+        for k in list(weights_dict.keys()):
+            if "head" in k:
+                del weights_dict[k]
+        print(model.load_state_dict(weights_dict, strict=False))
+
     if args.freeze_layers:
         for name, para in model.named_parameters():
-            if "head" not in name and "pre_logits" not in name:
+            # if "head" not in name and "pre_logits" not in name:
+            if "head" not in name:
                 para.requires_grad_(False)
             else:
                 print("training {}".format(name))
 
     pg = [p for p in model.parameters() if p.requires_grad]
-    optimizer = optim.SGD(pg, lr=args.lr, momentum=0.9, weight_decay=5E-5)
+    optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5E-5)
+    # optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=5E-2)
+
     lf = lambda x: ((1 + math.cos(x * math.pi / args.epochs)) / 2) * (1 - args.lrf) + args.lrf  # cosine
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     best_weight = 0
@@ -110,18 +128,19 @@ def main(args):
         tb_writer.add_scalar(tags[3], val_acc, epoch)
         tb_writer.add_scalar(tags[4], optimizer.param_groups[0]["lr"], epoch)
 
-        metric = val_acc / val_loss
+        metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), "./weights/temp.pth")
+            torch.save(model.state_dict(), "./weights/mlp.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str, default="resnet34")
     parser.add_argument('--num_classes', type=int, default=4)
-    parser.add_argument('--epochs', type=int, default=300)
-    parser.add_argument('--batch-size', type=int, default=32)
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
 
@@ -129,9 +148,12 @@ if __name__ == '__main__':
                         default="/home/lee/Work/data/oct_data")
     parser.add_argument('--model-name', default='', help='create model name')
 
-    parser.add_argument('--weights', type=str, default='./weights/jx_vit_base_patch16_224_in21k-e5005f0a.pth',
+    # parser.add_argument('--weights', type=str, default='./weights/swin_base_patch4_window7_224_22k.pth',
+    #                     help='initial weights path')
+    parser.add_argument('--weights', type=str, default='',
                         help='initial weights path')
-    parser.add_argument('--freeze-layers', type=bool, default=True)
+
+    parser.add_argument('--freeze-layers', type=bool, default=False)
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
     opt = parser.parse_args()
