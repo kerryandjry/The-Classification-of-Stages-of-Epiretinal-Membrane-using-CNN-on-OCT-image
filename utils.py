@@ -3,15 +3,14 @@ import sys
 import json
 import pickle
 import random
-
+from pathlib import Path
 import torch
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
 
-def read_split_data(root: str, val_rate: float = 0.2):
-    random.seed(0)
+def read_split_data(root: str, val_num: int):
     assert os.path.exists(root), "dataset root: {} does not exist.".format(root)
 
     flower_class = [cla for cla in os.listdir(root) if os.path.isdir(os.path.join(root, cla))]
@@ -30,48 +29,106 @@ def read_split_data(root: str, val_rate: float = 0.2):
     every_class_num = []
     supported = [".jpg", ".JPG", ".png", ".PNG"]
 
-    for cla in flower_class:
-        cla_path = os.path.join(root, cla)
+    path = Path(root)
+    cla_list = [1, 2, 3, 4]
+    cla_list.remove(val_num)
+    val_path = os.path.join(path, str(val_num))
+    print(val_path)
 
-        images = [os.path.join(root, cla, i) for i in os.listdir(cla_path)
+    for cla in flower_class:
+        cla_path = os.path.join(val_path, cla)
+        val_images = [os.path.join(val_path, cla, i) for i in os.listdir(cla_path)
                   if os.path.splitext(i)[-1] in supported]
 
-        image_class = class_indices[cla]
+        every_class_num.append(len(val_images))
 
-        every_class_num.append(len(images))
+        image_class = [class_indices[cla]] * len(val_images)
 
-        val_path = random.sample(images, k=int(len(images) * val_rate))
+        val_images_path.extend(val_images)
+        val_images_label.extend(image_class)
 
-        for img_path in images:
-            if img_path in val_path:
-                val_images_path.append(img_path)
-                val_images_label.append(image_class)
-            else:
-                train_images_path.append(img_path)
-                train_images_label.append(image_class)
+    for fold in cla_list:
+        for cla in flower_class:
+            cla_path = os.path.join(path, str(fold), cla)
+            images = [os.path.join(path, str(fold), cla, i) for i in os.listdir(cla_path)
+                      if os.path.splitext(i)[-1] in supported]
+
+            every_class_num.append(len(images))
+
+            image_class = [class_indices[cla]] * len(images)
+
+            train_images_path.extend(images)
+            train_images_label.extend(image_class)
 
     print("{} images were found in the dataset.".format(sum(every_class_num)))
     print("{} images for training.".format(len(train_images_path)))
     print("{} images for validation.".format(len(val_images_path)))
 
-    plot_image = False
-    if plot_image:
-
-        plt.bar(range(len(flower_class)), every_class_num, align='center')
-
-        plt.xticks(range(len(flower_class)), flower_class)
-
-        for i, v in enumerate(every_class_num):
-            plt.text(x=i, y=v + 5, s=str(v), ha='center')
-
-        plt.xlabel('image class')
-
-        plt.ylabel('number of images')
-
-        plt.title('flower class distribution')
-        plt.show()
-
     return train_images_path, train_images_label, val_images_path, val_images_label
+
+
+# def read_split_data(root: str, val_rate: float = 0.2):
+#     random.seed(0)
+#     assert os.path.exists(root), "dataset root: {} does not exist.".format(root)
+#
+#     flower_class = [cla for cla in os.listdir(root) if os.path.isdir(os.path.join(root, cla))]
+#
+#     flower_class.sort()
+#
+#     class_indices = dict((k, v) for v, k in enumerate(flower_class))
+#     json_str = json.dumps(dict((val, key) for key, val in class_indices.items()), indent=4)
+#     with open('class_indices.json', 'w') as json_file:
+#         json_file.write(json_str)
+#
+#     train_images_path = []
+#     train_images_label = []
+#     val_images_path = []
+#     val_images_label = []
+#     every_class_num = []
+#     supported = [".jpg", ".JPG", ".png", ".PNG"]
+#
+#     for cla in flower_class:
+#         cla_path = os.path.join(root, cla)
+#
+#         images = [os.path.join(root, cla, i) for i in os.listdir(cla_path)
+#                   if os.path.splitext(i)[-1] in supported]
+#
+#         image_class = class_indices[cla]
+#         print(image_class)
+#         every_class_num.append(len(images))
+#
+#         val_path = random.sample(images, k=int(len(images) * val_rate))
+#
+#         for img_path in images:
+#             if img_path in val_path:
+#                 val_images_path.append(img_path)
+#                 val_images_label.append(image_class)
+#             else:
+#                 train_images_path.append(img_path)
+#                 train_images_label.append(image_class)
+#
+#     print("{} images were found in the dataset.".format(sum(every_class_num)))
+#     print("{} images for training.".format(len(train_images_path)))
+#     print("{} images for validation.".format(len(val_images_path)))
+#
+#     plot_image = False
+#     if plot_image:
+#
+#         plt.bar(range(len(flower_class)), every_class_num, align='center')
+#
+#         plt.xticks(range(len(flower_class)), flower_class)
+#
+#         for i, v in enumerate(every_class_num):
+#             plt.text(x=i, y=v + 5, s=str(v), ha='center')
+#
+#         plt.xlabel('image class')
+#
+#         plt.ylabel('number of images')
+#
+#         plt.title('flower class distribution')
+#         plt.show()
+#
+#     return train_images_path, train_images_label, val_images_path, val_images_label
 
 
 def plot_data_loader_image(data_loader):
@@ -91,7 +148,7 @@ def plot_data_loader_image(data_loader):
 
             img = (img * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]) * 255
             label = labels[i].item()
-            plt.subplot(1, plot_num, i+1)
+            plt.subplot(1, plot_num, i + 1)
             plt.xlabel(class_indices[str(label)])
             plt.xticks([])
             plt.yticks([])

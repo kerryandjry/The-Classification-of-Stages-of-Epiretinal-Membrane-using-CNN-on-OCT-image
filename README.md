@@ -4,7 +4,7 @@
 
 ## CNN
 
-## transformer
+## Transformer
 
 ## MLP
 

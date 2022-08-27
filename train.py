@@ -10,11 +10,11 @@ from torchvision import transforms
 
 from my_dataset import MyDataSet
 from utils import read_split_data, train_one_epoch, evaluate
-from models.mlp import MLPMixer
-from models.resnet import resnet18
+# from models.resnet import resnet34
+from models import mlp
 
 
-def main(args):
+def main(args, val_num):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     if os.path.exists("./weights") is False:
@@ -22,7 +22,7 @@ def main(args):
 
     tb_writer = SummaryWriter()
 
-    train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path)
+    train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path, val_num)
 
     data_transform = {
         "train": transforms.Compose([transforms.Resize([224, 375]),
@@ -64,16 +64,8 @@ def main(args):
                                              collate_fn=val_dataset.collate_fn)
 
     # model = swin_base_patch4_window7_224_in22k(num_classes=args.num_classes, has_logits=False).to(device)
-    model = resnet18(num_classes=4).to(device)
-    # model = MLPMixer(
-    #     image_size=224,
-    #     channels=3,
-    #     patch_size=16,
-    #     dim=448,
-    #     depth=1,
-    #     dropout=0.3,
-    #     num_classes=4
-    # ).to(device)
+    model = mlp.linear_tiny().to(device)
+    # model = resnet34(num_classes=4).to(device)
 
     if args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
@@ -130,7 +122,7 @@ def main(args):
 
         metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), "./weights/mlp.pth")
+            torch.save(model.state_dict(), f"./mlp_{val_num}.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
@@ -140,12 +132,12 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default="resnet34")
     parser.add_argument('--num_classes', type=int, default=4)
     parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--batch-size', type=int, default=128)
+    parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
 
     parser.add_argument('--data-path', type=str,
-                        default="/home/lee/Work/data/oct_data")
+                        default="/home/lee/Work/data/oct_4fold/")
     parser.add_argument('--model-name', default='', help='create model name')
 
     # parser.add_argument('--weights', type=str, default='./weights/swin_base_patch4_window7_224_22k.pth',
@@ -158,4 +150,6 @@ if __name__ == '__main__':
 
     opt = parser.parse_args()
 
-    main(opt)
+    for val in range(1, 5):
+        print(f'dataset {val} as val date, others training')
+        main(opt, val)
