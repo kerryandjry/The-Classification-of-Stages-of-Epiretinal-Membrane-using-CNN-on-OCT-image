@@ -173,7 +173,7 @@ class LinearVisionTransformer(nn.Module):
 @register_model
 def linear_tiny(pretrained=False, **kwargs):
     model = LinearVisionTransformer(
-        patch_size=16, embed_dim=192, depth=6, num_heads=3, mlp_ratio=4, qkv_bias=True,
+        patch_size=16, embed_dim=192, depth=12, num_heads=4, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     model.default_cfg = _cfg()
     return model
@@ -191,8 +191,8 @@ def linear_base(pretrained=False, **kwargs):
 if __name__ == '__main__':
 
     # Test
-    x = torch.randn(5, 3, 224, 224)
-    m = linear_tiny()
+    x = torch.randn(2, 3, 224, 224)
+    m = linear_base()
     out = m(x)
     print('-----')
     print(f'num params: {sum(p.numel() for p in m.parameters())}')

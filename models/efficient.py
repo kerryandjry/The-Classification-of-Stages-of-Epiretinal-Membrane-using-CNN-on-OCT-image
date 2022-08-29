@@ -305,4 +305,14 @@ def efficientnetv2_s(num_classes: int = 1):
     return model
 
 
-pair = lambda x: x if isinstance(x, tuple) else (x, x)
+if __name__ == '__main__':
+    # Test
+    x = torch.randn(2, 3, 224, 224)
+    m = efficientnetv2_s()
+    out = m(x)
+    print('-----')
+    print(f'num params: {sum(p.numel() for p in m.parameters())}')
+    print(out.shape)
+    loss = out.sum()
+    loss.backward()
+    print('Single iteration completed successfully')

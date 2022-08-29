@@ -10,8 +10,11 @@ from torchvision import transforms
 
 from my_dataset import MyDataSet
 from utils import read_split_data, train_one_epoch, evaluate
-# from models.resnet import resnet34
+from models.resnet import resnet34
+from models.efficient import efficientnetv2_s
+from models.mobilenet import mobilenet_v3_small
 from models import mlp
+from models import vit_model
 
 
 def main(args, val_num):
@@ -63,14 +66,13 @@ def main(args, val_num):
                                              num_workers=nw,
                                              collate_fn=val_dataset.collate_fn)
 
-    # model = swin_base_patch4_window7_224_in22k(num_classes=args.num_classes, has_logits=False).to(device)
-    model = mlp.linear_tiny().to(device)
-    # model = resnet34(num_classes=4).to(device)
+    model = vit_model.vit_base_patch16_224_in21k(num_classes=args.num_classes, has_logits=False).to(device)
+    # model = mobilenet_v3_small(num_classes=4).to(device)
 
     if args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-        # weights_dict = torch.load(args.weights, map_location=device)
-        weights_dict = torch.load(args.weights, map_location=device)["model"]
+        weights_dict = torch.load(args.weights, map_location=device)
+        # weights_dict = torch.load(args.weights, map_location=device)["model"]
 
         del_keys = ['head.weight', 'head.bias'] if model.has_logits \
             else ['pre_logits.fc.weight', 'pre_logits.fc.bias', 'head.weight', 'head.bias']
@@ -122,7 +124,7 @@ def main(args, val_num):
 
         metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), f"./mlp_{val_num}.pth")
+            torch.save(model.state_dict(), f"./mob_{val_num}.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
@@ -132,7 +134,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default="resnet34")
     parser.add_argument('--num_classes', type=int, default=4)
     parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
 
@@ -140,12 +142,12 @@ if __name__ == '__main__':
                         default="/home/lee/Work/data/oct_4fold/")
     parser.add_argument('--model-name', default='', help='create model name')
 
-    # parser.add_argument('--weights', type=str, default='./weights/swin_base_patch4_window7_224_22k.pth',
-    #                     help='initial weights path')
-    parser.add_argument('--weights', type=str, default='',
+    parser.add_argument('--weights', type=str, default='./weights/jx_vit_base_patch16_224_in21k-e5005f0a.pth',
                         help='initial weights path')
+    # parser.add_argument('--weights', type=str, default='',
+    #                     help='initial weights path')
 
-    parser.add_argument('--freeze-layers', type=bool, default=False)
+    parser.add_argument('--freeze-layers', type=bool, default=True)
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
     opt = parser.parse_args()

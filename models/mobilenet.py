@@ -341,3 +341,16 @@ def mobilenet_v3_small(num_classes: int = 1,
     return MobileNetV3(inverted_residual_setting=inverted_residual_setting,
                        last_channel=last_channel,
                        num_classes=num_classes)
+
+
+if __name__ == '__main__':
+    # Test
+    x = torch.randn(2, 3, 224, 224)
+    m = mobilenet_v3_small()
+    out = m(x)
+    print('-----')
+    print(f'num params: {sum(p.numel() for p in m.parameters())}')
+    print(out.shape)
+    loss = out.sum()
+    loss.backward()
+    print('Single iteration completed successfully')
