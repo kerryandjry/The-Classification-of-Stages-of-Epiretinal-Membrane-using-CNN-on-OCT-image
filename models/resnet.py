@@ -164,9 +164,5 @@ class ResNet(nn.Module):
         return torch.squeeze(x, dim=1)
 
 
-def resnet34(num_classes=1000, include_top=True):
+def resnet34(num_classes=4, include_top=True):
     return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes, include_top=include_top)
-
-
-def resnet18(num_classes=1000, include_top=True):
-    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes, include_top=include_top)

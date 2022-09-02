@@ -371,3 +371,16 @@ def vit_huge_patch14_224_in21k(num_classes: int = 21843, has_logits: bool = True
                               representation_size=1280 if has_logits else None,
                               num_classes=num_classes)
     return model
+
+
+if __name__ == '__main__':
+    # Test
+    x = torch.randn(2, 3, 224, 224)
+    m = vit_base_patch16_224_in21k()
+    out = m(x)
+    print('-----')
+    print(f'num params: {sum(p.numel() for p in m.parameters())}')
+    print(out.shape)
+    loss = out.sum()
+    loss.backward()
+    print('Single iteration completed successfully')

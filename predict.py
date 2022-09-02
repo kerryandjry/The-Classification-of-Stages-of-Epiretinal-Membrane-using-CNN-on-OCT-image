@@ -6,9 +6,9 @@ from PIL import Image
 from torchvision import transforms
 import matplotlib.pyplot as plt
 
-from models.vit_model import vit_base_patch16_224_in21k as create_model
-# from swin_model import swin_base_patch4_window7_224_in22k
-# from models.resnet import resnet34
+from models.vit_model import vit_base_patch16_224_in21k
+from models.swin_model import swin_tiny_patch4_window7_224
+from models.resnet import resnet34
 from models.efficient import efficientnetv2_s
 from models.mobilenet import mobilenet_v3_small
 from models import mlp
@@ -17,12 +17,12 @@ from models import mlp
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # model = swin_base_patch4_window7_224_in22k(num_classes=4, has_logits=False).to(device)
-    # model = mlp.linear_base().to(device)
-    model = mobilenet_v3_small(num_classes=4).to(device)
+    # model = resnet34(num_classes=4).to(device)
+    model = swin_tiny_patch4_window7_224(num_classes=4).to(device)
+    model_weight_path = "weights/swin/swin_4.pth"
 
-    model_weight_path = "weights/mobile/mob_1.pth"
     model.load_state_dict(torch.load(model_weight_path, map_location=device))
+    model.eval()
 
     data_transform = transforms.Compose([transforms.Resize([224, 375]),
                                          transforms.CenterCrop(224),
@@ -32,6 +32,7 @@ def main():
     path = Path("./test")
     average_acc = 0
     for i in path.iterdir():
+        print(i)
         all_image, class_num = 0, 0
         num = str(i)[-1:]
 
@@ -50,7 +51,6 @@ def main():
             json_file = open(json_path, "r")
             class_indict = json.load(json_file)
 
-            model.eval()
             with torch.no_grad():
 
                 output = torch.squeeze(model(img.to(device)))
@@ -59,7 +59,6 @@ def main():
 
             print_res = "class: {}   prob: {:.3}".format(class_indict[str(predict_cla)],
                                                          predict[predict_cla].numpy())
-
             if class_indict[str(predict_cla)] == num:
                 class_num += 1
 

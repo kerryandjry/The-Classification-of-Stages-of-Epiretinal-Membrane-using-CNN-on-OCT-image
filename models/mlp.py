@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     # Test
     x = torch.randn(2, 3, 224, 224)
-    m = linear_base()
+    m = linear_tiny()
     out = m(x)
     print('-----')
     print(f'num params: {sum(p.numel() for p in m.parameters())}')

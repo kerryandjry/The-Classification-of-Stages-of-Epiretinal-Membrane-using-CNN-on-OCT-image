@@ -27,6 +27,7 @@ def drop_path_f(x, drop_prob: float = 0., training: bool = False):
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
     """
+
     def __init__(self, drop_prob=None):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
@@ -76,6 +77,7 @@ class PatchEmbed(nn.Module):
     """
     2D Image to Patch Embedding
     """
+
     def __init__(self, patch_size=4, in_c=3, embed_dim=96, norm_layer=None):
         super().__init__()
         patch_size = (patch_size, patch_size)
@@ -155,6 +157,7 @@ class PatchMerging(nn.Module):
 class Mlp(nn.Module):
     """ MLP as used in Vision Transformer, MLP-Mixer and related networks
     """
+
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
@@ -657,3 +660,16 @@ def swin_large_patch4_window12_384_in22k(num_classes: int = 21841, **kwargs):
                             num_classes=num_classes,
                             **kwargs)
     return model
+
+
+if __name__ == '__main__':
+    # Test
+    x = torch.randn(2, 3, 224, 224)
+    m = swin_tiny_patch4_window7_224()
+    out = m(x)
+    print('-----')
+    print(f'num params: {sum(p.numel() for p in m.parameters())}')
+    print(out.shape)
+    loss = out.sum()
+    loss.backward()
+    print('Single iteration completed successfully')

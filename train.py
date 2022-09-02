@@ -15,6 +15,7 @@ from models.efficient import efficientnetv2_s
 from models.mobilenet import mobilenet_v3_small
 from models import mlp
 from models import vit_model
+from models import swin_model
 
 
 def main(args, val_num):
@@ -66,22 +67,18 @@ def main(args, val_num):
                                              num_workers=nw,
                                              collate_fn=val_dataset.collate_fn)
 
-    model = vit_model.vit_base_patch16_224_in21k(num_classes=args.num_classes, has_logits=False).to(device)
+    # model = vit_model.vit_base_patch16_224_in21k(num_classes=args.num_classes, has_logits=False).to(device)
+    model = swin_model.swin_tiny_patch4_window7_224(num_classes=args.num_classes).to(device)
     # model = mobilenet_v3_small(num_classes=4).to(device)
+    # model = vit_model.vit_base_patch16_224_in21k(num_classes=4).to(device)
 
     if args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-        weights_dict = torch.load(args.weights, map_location=device)
-        # weights_dict = torch.load(args.weights, map_location=device)["model"]
-
-        del_keys = ['head.weight', 'head.bias'] if model.has_logits \
-            else ['pre_logits.fc.weight', 'pre_logits.fc.bias', 'head.weight', 'head.bias']
-        for k in del_keys:
-            del weights_dict[k]
-        print(model.load_state_dict(weights_dict, strict=False))
+        weights_dict = torch.load(args.weights, map_location=device)['model']
 
         for k in list(weights_dict.keys()):
             if "head" in k:
+                print(f"del {k}")
                 del weights_dict[k]
         print(model.load_state_dict(weights_dict, strict=False))
 
@@ -91,11 +88,11 @@ def main(args, val_num):
             if "head" not in name:
                 para.requires_grad_(False)
             else:
-                print("training {}".format(name))
+                print(f"training {name}")
 
     pg = [p for p in model.parameters() if p.requires_grad]
-    optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5E-5)
-    # optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=5E-2)
+    optimizer = optim.SGD(params=pg, lr=args.lr, momentum=0.9, weight_decay=5E-5)
+    # optimizer = optim.Adam(params=pg, lr=args.lr, weight_decay=5E-2)
 
     lf = lambda x: ((1 + math.cos(x * math.pi / args.epochs)) / 2) * (1 - args.lrf) + args.lrf  # cosine
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
@@ -124,16 +121,15 @@ def main(args, val_num):
 
         metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), f"./mob_{val_num}.pth")
+            torch.save(model.state_dict(), f"./swin_{val_num}.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default="resnet34")
     parser.add_argument('--num_classes', type=int, default=4)
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
@@ -142,13 +138,13 @@ if __name__ == '__main__':
                         default="/home/lee/Work/data/oct_4fold/")
     parser.add_argument('--model-name', default='', help='create model name')
 
-    parser.add_argument('--weights', type=str, default='./weights/jx_vit_base_patch16_224_in21k-e5005f0a.pth',
+    parser.add_argument('--weights', type=str, default='./weights/swin_tiny_patch4_window7_224.pth',
                         help='initial weights path')
     # parser.add_argument('--weights', type=str, default='',
     #                     help='initial weights path')
 
     parser.add_argument('--freeze-layers', type=bool, default=True)
-    parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
+    parser.add_argument('--device', default='cuda:0', help='device id')
 
     opt = parser.parse_args()
 
