@@ -17,14 +17,15 @@ from models import mlp
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    # model = swin_tiny_patch4_window7_224(num_classes=4).to(device)
     model = resnet34(num_classes=4).to(device)
-    model_weight_path = "weights/resnet34/res_4.pth"
+    model_weight_path = "new_weights/res_1.pth"
 
     model.load_state_dict(torch.load(model_weight_path, map_location=device))
     model.eval()
 
-    data_transform = transforms.Compose([transforms.Resize([224, 375]),
-                                         transforms.CenterCrop(224),
+    data_transform = transforms.Compose([transforms.Resize([224, 224]),
+                                         # transforms.CenterCrop(224),
                                          transforms.ToTensor(),
                                          transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
                                          ])

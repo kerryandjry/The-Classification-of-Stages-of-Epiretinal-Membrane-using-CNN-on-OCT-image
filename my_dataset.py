@@ -1,7 +1,7 @@
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
-
+from torchvision import transforms
 
 class MyDataSet(Dataset):
 
@@ -19,8 +19,15 @@ class MyDataSet(Dataset):
             raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
         label = self.images_class[item]
 
-        if self.transform is not None:
+        if self.transform is not None and label != 3:
             img = self.transform(img)
+        else:
+            t = transforms.Compose([
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+            ])
+            img = t(img)
 
         return img, label
 

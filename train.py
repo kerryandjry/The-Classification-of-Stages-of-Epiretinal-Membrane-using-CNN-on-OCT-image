@@ -21,22 +21,25 @@ from models import swin_model
 def main(args, val_num):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
-    if os.path.exists("./weights") is False:
-        os.makedirs("./weights")
+    if os.path.exists("./new_weights") is False:
+        os.makedirs("./new_weights")
 
     tb_writer = SummaryWriter()
 
     train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path, val_num)
 
     data_transform = {
-        "train": transforms.Compose([transforms.Resize([224, 375]),
-                                     transforms.CenterCrop(224),
+        "train": transforms.Compose([
+                                     transforms.Resize([224, 224]),
+                                     #transforms.CenterCrop(224),
                                      transforms.RandomHorizontalFlip(),
                                      transforms.ToTensor(),
                                      transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
                                      ]),
-        "val": transforms.Compose([transforms.Resize([224, 375]),
-                                   transforms.CenterCrop(224),
+
+        "val": transforms.Compose([
+                                   transforms.Resize([224, 224]),
+                                   #transforms.CenterCrop(224),
                                    transforms.ToTensor(),
                                    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
                                    ]),
@@ -68,8 +71,8 @@ def main(args, val_num):
                                              collate_fn=val_dataset.collate_fn)
 
     # model = vit_model.vit_base_patch16_224_in21k(num_classes=args.num_classes, has_logits=False).to(device)
-    model = swin_model.swin_tiny_patch4_window7_224(num_classes=args.num_classes).to(device)
-    # model = mobilenet_v3_small(num_classes=4).to(device)
+    # model = swin_model.swin_tiny_patch4_window7_224(num_classes=args.num_classes).to(device)
+    model = resnet34(num_classes=4).to(device)
     # model = vit_model.vit_base_patch16_224_in21k(num_classes=4).to(device)
 
     if args.weights != "":
@@ -121,7 +124,7 @@ def main(args, val_num):
 
         metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), f"./swin_{val_num}.pth")
+            torch.save(model.state_dict(), f"./new_weights/res_{val_num}.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
@@ -130,20 +133,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_classes', type=int, default=4)
     parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--batch-size', type=int, default=32)
+    parser.add_argument('--batch-size', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
 
     parser.add_argument('--data-path', type=str,
-                        default="/home/lee/Work/data/oct_4fold/")
+                        default="/home/lee/Work/data/new_oct_4fold/")
     parser.add_argument('--model-name', default='', help='create model name')
 
-    parser.add_argument('--weights', type=str, default='./weights/swin_tiny_patch4_window7_224.pth',
+    # parser.add_argument('--weights', type=str, default='./weights/linear_tiny_checkpoint.pth',
+    #                    help='initial weights path')
+    parser.add_argument('--weights', type=str, default='',
                         help='initial weights path')
-    # parser.add_argument('--weights', type=str, default='',
-    #                     help='initial weights path')
 
-    parser.add_argument('--freeze-layers', type=bool, default=True)
+    parser.add_argument('--freeze-layers', type=bool, default=False)
     parser.add_argument('--device', default='cuda:0', help='device id')
 
     opt = parser.parse_args()
