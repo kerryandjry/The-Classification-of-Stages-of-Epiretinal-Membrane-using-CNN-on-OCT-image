@@ -72,7 +72,7 @@ def main(args, val_num):
 
     # model = vit_model.vit_base_patch16_224_in21k(num_classes=args.num_classes, has_logits=False).to(device)
     # model = swin_model.swin_tiny_patch4_window7_224(num_classes=args.num_classes).to(device)
-    model = resnet34(num_classes=4).to(device)
+    model = efficientnetv2_s(num_classes=4).to(device)
     # model = vit_model.vit_base_patch16_224_in21k(num_classes=4).to(device)
 
     if args.weights != "":
@@ -87,14 +87,14 @@ def main(args, val_num):
 
     if args.freeze_layers:
         for name, para in model.named_parameters():
-            # if "head" not in name and "pre_logits" not in name:
-            if "head" not in name:
+            if "head" not in name and "pre_logits" not in name:
+            # if "head" not in name:
                 para.requires_grad_(False)
             else:
                 print(f"training {name}")
 
     pg = [p for p in model.parameters() if p.requires_grad]
-    optimizer = optim.SGD(params=pg, lr=args.lr, momentum=0.9, weight_decay=5E-5)
+    optimizer = optim.SGD(params=pg, lr=args.lr, momentum=0.9, weight_decay=5E-4)
     # optimizer = optim.Adam(params=pg, lr=args.lr, weight_decay=5E-2)
 
     lf = lambda x: ((1 + math.cos(x * math.pi / args.epochs)) / 2) * (1 - args.lrf) + args.lrf  # cosine
@@ -124,7 +124,7 @@ def main(args, val_num):
 
         metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), f"./new_weights/res_{val_num}.pth")
+            torch.save(model.state_dict(), f"./new_weights/eff_{val_num}.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
@@ -132,8 +132,8 @@ def main(args, val_num):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_classes', type=int, default=4)
-    parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--batch-size', type=int, default=8)
+    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--batch-size', type=int, default=16)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                         default="/home/lee/Work/data/new_oct_4fold/")
     parser.add_argument('--model-name', default='', help='create model name')
 
-    # parser.add_argument('--weights', type=str, default='./weights/linear_tiny_checkpoint.pth',
+    # parser.add_argument('--weights', type=str, default='./weights/swin_tiny_patch4_window7_224.pth',
     #                    help='initial weights path')
     parser.add_argument('--weights', type=str, default='',
                         help='initial weights path')

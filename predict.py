@@ -17,9 +17,9 @@ from models import mlp
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # model = swin_tiny_patch4_window7_224(num_classes=4).to(device)
-    model = resnet34(num_classes=4).to(device)
-    model_weight_path = "new_weights/res_1.pth"
+    model = efficientnetv2_s(num_classes=4).to(device)
+    # model = resnet34(num_classes=4).to(device)
+    model_weight_path = "new_weights/eff1.pth"
 
     model.load_state_dict(torch.load(model_weight_path, map_location=device))
     model.eval()
@@ -39,10 +39,9 @@ def main():
         for img in Path(i).iterdir():
             all_image += 1
             img = Image.open(img)
-            plt.imshow(img)
-
+            # plt.imshow(img)
+            img = img.crop((106, 30, 706, 400))
             img = data_transform(img)
-
             img = torch.unsqueeze(img, dim=0)
 
             json_path = './class_indices.json'
@@ -57,8 +56,10 @@ def main():
                 predict = torch.softmax(output.cpu(), dim=0)
                 predict_cla = torch.argmax(predict).numpy()
 
-            print_res = "class: {}   prob: {:.3}".format(class_indict[str(predict_cla)],
+            print_res = "label: {} label class: {}   prob: {:.3}".format(num, class_indict[str(predict_cla)],
                                                          predict[predict_cla].numpy())
+            print(print_res)
+
             if class_indict[str(predict_cla)] == num:
                 class_num += 1
 
