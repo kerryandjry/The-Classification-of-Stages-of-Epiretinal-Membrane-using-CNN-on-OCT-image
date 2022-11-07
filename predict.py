@@ -17,15 +17,13 @@ from models import mlp
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = efficientnetv2_s(num_classes=4).to(device)
-    # model = resnet34(num_classes=4).to(device)
-    model_weight_path = "new_weights/eff1.pth"
-
+    model = mlp.linear_tiny(num_classes=4).to(device)
+    model_weight_path = "weights/mlp/tiny_4.pth"
     model.load_state_dict(torch.load(model_weight_path, map_location=device))
     model.eval()
 
-    data_transform = transforms.Compose([transforms.Resize([224, 224]),
-                                         # transforms.CenterCrop(224),
+    data_transform = transforms.Compose([transforms.Resize([224, 375]),
+                                         transforms.CenterCrop(224),
                                          transforms.ToTensor(),
                                          transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
                                          ])
@@ -34,13 +32,14 @@ def main():
     for i in path.iterdir():
         print(i)
         all_image, class_num = 0, 0
+        class_1, class_2, class_3, class_4 = 0, 0, 0, 0
         num = str(i)[-1:]
 
         for img in Path(i).iterdir():
             all_image += 1
             img = Image.open(img)
             # plt.imshow(img)
-            img = img.crop((106, 30, 706, 400))
+            # img = img.crop((106, 30, 706, 400))
             img = data_transform(img)
             img = torch.unsqueeze(img, dim=0)
 
@@ -56,16 +55,24 @@ def main():
                 predict = torch.softmax(output.cpu(), dim=0)
                 predict_cla = torch.argmax(predict).numpy()
 
-            print_res = "label: {} label class: {}   prob: {:.3}".format(num, class_indict[str(predict_cla)],
+            print_res = "label: {} model class: {}   prob: {:.3}".format(num, class_indict[str(predict_cla)],
                                                          predict[predict_cla].numpy())
-            print(print_res)
+            # print(print_res)
 
             if class_indict[str(predict_cla)] == num:
                 class_num += 1
+            if class_indict[str(predict_cla)] == '1':
+                class_1 += 1
+            if class_indict[str(predict_cla)] == '2':
+                class_2 += 1
+            if class_indict[str(predict_cla)] == '3':
+                class_3 += 1
+            if class_indict[str(predict_cla)] == '4':
+                class_4 += 1
 
         average = class_num / all_image
         average_acc += average
-        print(f"class {num} = {class_num}, all images = {all_image}")
+        print(f"class {num} = {class_num}, all images = {all_image}, class_1 = {class_1}, class_2 = {class_2}, class_3 = {class_3}, class_4 = {class_4}")
         print(f'{average}%')
 
     print(f'average of all = {average_acc / 4}')

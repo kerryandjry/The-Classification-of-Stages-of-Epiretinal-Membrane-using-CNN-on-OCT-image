@@ -15,7 +15,7 @@ class MyDataSet(Dataset):
 
     def __getitem__(self, item):
         img = Image.open(self.images_path[item])
-        img = img.crop((106, 60, 706, 380))
+        # img = img.crop((106, 60, 706, 380))
         if img.mode != 'RGB':
             raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
         label = self.images_class[item]

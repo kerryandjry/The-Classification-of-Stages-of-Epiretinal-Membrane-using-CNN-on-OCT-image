@@ -18,7 +18,7 @@ from models import vit_model
 from models import swin_model
 
 
-def main(args, val_num):
+def main(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     if os.path.exists("./new_weights") is False:
@@ -26,22 +26,22 @@ def main(args, val_num):
 
     tb_writer = SummaryWriter()
 
-    train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path, val_num)
+    train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path)
 
     data_transform = {
         "train": transforms.Compose([
-                                     transforms.Resize([224, 224]),
-                                     #transforms.CenterCrop(224),
+                                     transforms.Resize([224, 375]),
+                                     transforms.CenterCrop(224),
                                      transforms.RandomHorizontalFlip(),
                                      transforms.ToTensor(),
-                                     transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+                                     # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
                                      ]),
 
         "val": transforms.Compose([
-                                   transforms.Resize([224, 224]),
-                                   #transforms.CenterCrop(224),
+                                   transforms.Resize([224, 375]),
+                                   transforms.CenterCrop(224),
                                    transforms.ToTensor(),
-                                   transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+                                   # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
                                    ]),
     }
 
@@ -71,13 +71,13 @@ def main(args, val_num):
                                              collate_fn=val_dataset.collate_fn)
 
     # model = vit_model.vit_base_patch16_224_in21k(num_classes=args.num_classes, has_logits=False).to(device)
-    # model = swin_model.swin_tiny_patch4_window7_224(num_classes=args.num_classes).to(device)
-    model = efficientnetv2_s(num_classes=4).to(device)
-    # model = vit_model.vit_base_patch16_224_in21k(num_classes=4).to(device)
+    model = resnet34(num_classes=args.num_classes).to(device)
+    # model = (num_classes=4).to(device)
 
     if args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-        weights_dict = torch.load(args.weights, map_location=device)['model']
+        # weights_dict = torch.load(args.weights, map_location=device)['model']
+        weights_dict = torch.load(args.weights, map_location=device)
 
         for k in list(weights_dict.keys()):
             if "head" in k:
@@ -124,7 +124,7 @@ def main(args, val_num):
 
         metric = val_acc
         if metric > best_weight:
-            torch.save(model.state_dict(), f"./new_weights/eff_{val_num}.pth")
+            torch.save(model.state_dict(), f"./new_weights_che/res.pth")
             best_weight = metric
             print(f"metric = {metric}, save model")
 
@@ -133,15 +133,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_classes', type=int, default=4)
     parser.add_argument('--epochs', type=int, default=30)
-    parser.add_argument('--batch-size', type=int, default=16)
+    parser.add_argument('--batch-size', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
 
     parser.add_argument('--data-path', type=str,
-                        default="/home/lee/Work/data/new_oct_4fold/")
+                        default="/home/lee/Work/data/new_oct_4fold_che/")
     parser.add_argument('--model-name', default='', help='create model name')
 
-    # parser.add_argument('--weights', type=str, default='./weights/swin_tiny_patch4_window7_224.pth',
+    # parser.add_argument('--weights', type=str, default='./weights/linear_tiny_checkpoint.pth',
     #                    help='initial weights path')
     parser.add_argument('--weights', type=str, default='',
                         help='initial weights path')
@@ -150,7 +150,8 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='cuda:0', help='device id')
 
     opt = parser.parse_args()
+    main(opt)
 
-    for val in range(1, 5):
-        print(f'dataset {val} as val date, others training')
-        main(opt, val)
+    # for val in range(1, 5):
+    #     print(f'dataset {val} as val date, others training')
+    #     main(opt, val)
