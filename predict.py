@@ -17,8 +17,8 @@ from models import mlp
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = mlp.linear_tiny(num_classes=4).to(device)
-    model_weight_path = "weights/mlp/tiny_4.pth"
+    model = resnet34(num_classes=4).to(device)
+    model_weight_path = "new_weights/resnet/res_4.pth"
     model.load_state_dict(torch.load(model_weight_path, map_location=device))
     model.eval()
 
