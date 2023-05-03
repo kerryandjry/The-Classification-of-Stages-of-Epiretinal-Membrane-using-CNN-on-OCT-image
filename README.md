@@ -9,6 +9,7 @@
 - tqdm
 
 ## Training data
+![alt text](images/OCT.png)
 
 ## Run
 ### train
@@ -25,6 +26,8 @@ python predict.py
 | Efficientnet | 0.978 |  0.883  | 0.815 |   20M    | 
 |  Swin Transformer | 0.988 | 0.947 | 0.811 |  28M  |
 |   MIXER   | 0.991 |   0.931   | 0.818 |   7.4M    |
+
+![alt text](images/result_compare_with_ophthalmologists.png)
 
 ## Reference
 https://github.com/ramprs/grad-cam //grad-cam
