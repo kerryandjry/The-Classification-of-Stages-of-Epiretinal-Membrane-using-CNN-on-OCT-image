@@ -1,5 +1,16 @@
 # The Classification of Stages of Epiretinal Membrane using Convolutional Neural Network on Optical Coherence Tomography Image
 
+## Install dependencies
+pytorch
+numpy
+opencv
+matlibplot
+tqdm
+## Run
+### train
+python train.py
+### test
+python predict.py
 
 ## Result
 
@@ -11,3 +22,5 @@
 |  swin transformer | 0.988 | 0.947 | 0.811 |  28M  |
 |   mixer   | 0.991 |   0.931   | 0.818 |   7.4M    |
 
+## Reference
+https://github.com/ramprs/grad-cam
