@@ -8,6 +8,8 @@
 - PIL
 - tqdm
 
+## Training data
+
 ## Run
 ### train
 python train.py
@@ -25,4 +27,5 @@ python predict.py
 |   MIXER   | 0.991 |   0.931   | 0.818 |   7.4M    |
 
 ## Reference
-https://github.com/ramprs/grad-cam
+https://github.com/ramprs/grad-cam //grad-cam
+https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html //ROC-Curve
